@@ -33,13 +33,13 @@
     },
     "platformConfig": {
         "macos": {
-            "bundleId": "com.example.plugintemplate-for-obs"
+            "bundleId": "br.com.joseafga.streamiau-counter"
         }
     },
-    "name": "plugintemplate-for-obs",
-    "displayName": "Plugin Template for OBS",
+    "name": "streamiau-counter",
+    "displayName": "Streamiau counter for OBS",
     "version": "1.0.0",
-    "author": "Your Name Here",
-    "website": "https://example.com",
-    "email": "me@example.com"
+    "author": "José Almeida",
+    "website": "https://github.com/joseafga/streamiau-obs",
+    "email": "streamiau@joseafga.com.br"
 }
