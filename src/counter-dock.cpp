@@ -70,7 +70,6 @@ void CounterDock::buildUi()
 	mainLayout->addWidget(m_counterLabel);
 	mainLayout->addWidget(m_decBtn);
 
-	auto *row = new QHBoxLayout();
 	m_resetBtn = new QPushButton(tr("Zerar"), this);
 
 	m_settingsBtn = new QPushButton(QStringLiteral("\u2699"), this);
@@ -81,6 +80,7 @@ void CounterDock::buildUi()
 	m_settingsBtn->setText("");
 	m_settingsBtn->setEnabled(true);
 
+	auto *row = new QHBoxLayout();
 	row->addWidget(m_resetBtn);
 	row->addStretch(1);
 	row->addWidget(m_settingsBtn);
@@ -92,14 +92,20 @@ void CounterDock::buildUi()
 	m_logList->setStyleSheet("QListWidget::item { padding: 0px; margin: 0px; }");
 	mainLayout->addWidget(m_logList, 1);
 
+	// Status bar
 	m_statusLabel = new QLabel(this);
 	m_statusLabel->setStyleSheet("color: gray; font-style: italic;");
-	mainLayout->addWidget(m_statusLabel);
 
-	m_wsStatusLabel = new QLabel(this);
-	m_wsStatusLabel->setStyleSheet("color: gray; font-style: italic;");
-	mainLayout->addWidget(m_wsStatusLabel);
+	m_wsIndicatorLabel = new QLabel(this);
+	m_wsIndicatorLabel->setFixedSize(12, 12);
+	m_wsIndicatorLabel->setToolTip(tr("Status do WebSocket"));
 	updateWsStatusLabel(false);
+
+	auto *statusBar = new QHBoxLayout();
+	statusBar->addWidget(m_statusLabel);
+	statusBar->addStretch(1);
+	statusBar->addWidget(m_wsIndicatorLabel);
+	mainLayout->addLayout(statusBar);
 
 	connect(m_incBtn, &QPushButton::clicked, this, &CounterDock::onIncrement);
 	connect(m_decBtn, &QPushButton::clicked, this, &CounterDock::onDecrement);
@@ -116,7 +122,7 @@ void CounterDock::onIncrement()
 	m_count += 1;
 	updateDisplay();
 	writeToFile();
-	addLogEntry("OBS", "", m_count);
+	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
 	sendCounterUpdate();
 	saveSettings();
 }
@@ -126,7 +132,7 @@ void CounterDock::onDecrement()
 	m_count -= 1;
 	updateDisplay();
 	writeToFile();
-	addLogEntry("OBS", "", m_count);
+	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
 	sendCounterUpdate();
 	saveSettings();
 }
@@ -139,7 +145,7 @@ void CounterDock::onReset()
 	m_count = 0;
 	updateDisplay();
 	writeToFile();
-	addLogEntry("OBS", "", m_count);
+	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
 	sendCounterUpdate();
 	saveSettings();
 }
@@ -173,7 +179,7 @@ void CounterDock::writeToFile()
 {
 	if (m_outputPath.isEmpty()) {
 		if (m_statusLabel)
-			m_statusLabel->setText(tr("Nenhum arquivo configurado. Clique em \"Configurações...\"."));
+			m_statusLabel->setText(tr("Nenhum arquivo configurado."));
 		return;
 	}
 
@@ -190,12 +196,9 @@ void CounterDock::writeToFile()
 	QTextStream stream(&file);
 	stream << m_count;
 	file.close();
-
-	if (m_statusLabel)
-		m_statusLabel->setText(tr("Arquivo atualizado."));
 }
 
-void CounterDock::addLogEntry(const QString &sender, const QString &message, int newValue)
+void CounterDock::addLogEntry(const QString &sender, const QString &message, qint64 newValue)
 {
 	QString timestamp = QTime::currentTime().toString("HH:mm:ss");
 	QString text = QString("[%1] %2: %3").arg(timestamp).arg(sender).arg(newValue);
@@ -264,7 +267,7 @@ void CounterDock::saveSettings()
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
 		return;
 
-	file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+	file.write(QJsonDocument(obj).toJson());
 	file.close();
 }
 
@@ -291,21 +294,19 @@ void CounterDock::connectWebSocket()
 	connect(m_webSocket, &QWebSocket::textMessageReceived, this, &CounterDock::onWebSocketTextMessageReceived);
 	connect(m_webSocket, &QWebSocket::errorOccurred, this, &CounterDock::onWebSocketErrorOccurred);
 
-	m_wsStatusLabel->setText(tr("WebSocket: conectando..."));
 	m_webSocket->open(QUrl(m_wsUrl.trimmed()));
 }
 
 void CounterDock::onWebSocketConnected()
 {
 	updateWsStatusLabel(true);
-	blog(LOG_INFO, "[obs-counter] WebSocket conectado: %s", qPrintable(m_wsUrl));
 }
 
 void CounterDock::onWebSocketDisconnected()
 {
 	updateWsStatusLabel(false);
 
-	// Tenta reconectar automaticamente enquanto houver um endereço configurado.
+	// Keep reconnecting
 	if (!m_wsUrl.trimmed().isEmpty())
 		m_wsReconnectTimer->start(kWsReconnectDelayMs);
 }
@@ -315,9 +316,7 @@ void CounterDock::onWebSocketErrorOccurred(QAbstractSocket::SocketError error)
 	Q_UNUSED(error)
 	updateWsStatusLabel(false);
 
-	if (m_webSocket)
-		blog(LOG_WARNING, "[obs-counter] Erro no WebSocket: %s", qPrintable(m_webSocket->errorString()));
-
+	// Keep reconnecting
 	if (!m_wsUrl.trimmed().isEmpty())
 		m_wsReconnectTimer->start(kWsReconnectDelayMs);
 }
@@ -339,7 +338,7 @@ void CounterDock::onWebSocketTextMessageReceived(const QString &message)
 		return;
 
 	// value is a UInt32
-	uint newValue = static_cast<uint>(obj.value("value").toInteger());
+	qint64 newValue = static_cast<qint64>(obj.value("value").toInteger());
 
 	QString sender = "WebSocket";
 	QString note;
@@ -364,7 +363,7 @@ void CounterDock::sendCounterUpdate()
 		return;
 
 	if (m_token.isEmpty())
-	    return;
+		return;
 
 	QJsonObject metadata;
 	metadata["sender"] = QStringLiteral("OBS");
@@ -380,13 +379,20 @@ void CounterDock::sendCounterUpdate()
 
 void CounterDock::updateWsStatusLabel(bool connected)
 {
-	if (!m_wsStatusLabel)
+    if (!m_wsIndicatorLabel)
 		return;
 
 	if (m_wsUrl.trimmed().isEmpty()) {
-		m_wsStatusLabel->setText(tr("WebSocket: nenhum endereço configurado."));
+		m_wsIndicatorLabel->setStyleSheet("background-color: #7F8C8D; border-radius: 6px;"); // sem endereço
+		m_wsIndicatorLabel->setToolTip(tr("WebSocket: nenhum endereço configurado."));
 		return;
 	}
 
-	m_wsStatusLabel->setText(connected ? tr("WebSocket: conectado.") : tr("WebSocket: desconectado."));
+	if (connected) {
+		m_wsIndicatorLabel->setStyleSheet("background-color: #2ECC71; border-radius: 6px;"); // conectado
+		m_wsIndicatorLabel->setToolTip(tr("WebSocket: conectado."));
+	} else {
+		m_wsIndicatorLabel->setStyleSheet("background-color: #CC2D2D; border-radius: 6px;"); // desconectado
+		m_wsIndicatorLabel->setToolTip(tr("WebSocket: desconectado."));
+	}
 }

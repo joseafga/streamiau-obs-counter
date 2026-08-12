@@ -37,7 +37,7 @@ private:
 	void buildUi();
 	void updateDisplay();
 	void writeToFile();
-	void addLogEntry(const QString &sender, const QString &message, int newValue);
+	void addLogEntry(const QString &sender, const QString &message, qint64 newValue);
 	void loadSettings();
 	void saveSettings();
 	QString configFilePath() const;
@@ -58,7 +58,7 @@ private:
 	QListWidget *m_logList = nullptr;
 	QPushButton *m_settingsBtn = nullptr;
 	QLabel *m_statusLabel = nullptr;
-	QLabel *m_wsStatusLabel = nullptr;
+	QLabel *m_wsIndicatorLabel = nullptr;
 
 	QWebSocket *m_webSocket = nullptr;
 	QTimer *m_wsReconnectTimer = nullptr;
