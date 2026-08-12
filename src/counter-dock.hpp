@@ -5,6 +5,10 @@
 #include <QPushButton>
 #include <QListWidget>
 #include <QString>
+#include <QAbstractSocket>
+
+class QWebSocket;
+class QTimer;
 
 /*
  * CounterDock
@@ -24,17 +28,27 @@ private slots:
 	void onReset();
 	void onOpenSettings();
 
+	void onWebSocketConnected();
+	void onWebSocketDisconnected();
+	void onWebSocketErrorOccurred(QAbstractSocket::SocketError error);
+	void onWebSocketTextMessageReceived(const QString &message);
+
 private:
 	void buildUi();
 	void updateDisplay();
 	void writeToFile();
-	void addLogEntry(const QString &action, int newValue);
+	void addLogEntry(const QString &sender, const QString &message, int newValue);
 	void loadSettings();
 	void saveSettings();
 	QString configFilePath() const;
 
-	int m_count = 0;
+	void connectWebSocket();
+	void updateWsStatusLabel(bool connected);
+
+	qint64 m_count = 0;
 	QString m_outputPath;
+	QString m_wsUrl;
+	QString m_token;
 
 	QLabel *m_counterLabel = nullptr;
 	QPushButton *m_incBtn = nullptr;
@@ -43,4 +57,8 @@ private:
 	QListWidget *m_logList = nullptr;
 	QPushButton *m_settingsBtn = nullptr;
 	QLabel *m_statusLabel = nullptr;
+	QLabel *m_wsStatusLabel = nullptr;
+
+	QWebSocket *m_webSocket = nullptr;
+	QTimer *m_wsReconnectTimer = nullptr;
 };
