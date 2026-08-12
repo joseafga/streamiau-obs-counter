@@ -9,7 +9,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
-#include <QTime>
+#include <QDateTime>
 #include <QFont>
 #include <QUrl>
 #include <QTimer>
@@ -200,8 +200,8 @@ void CounterDock::writeToFile()
 
 void CounterDock::addLogEntry(const QString &sender, const QString &message, qint64 newValue)
 {
-	QString timestamp = QTime::currentTime().toString("HH:mm:ss");
-	QString text = QString("[%1] %2: %3").arg(timestamp).arg(sender).arg(newValue);
+	m_timestamp = QDateTime::currentDateTime();
+	QString text = QString("[%1] %2: %3").arg(m_timestamp.toString("HH:mm:ss")).arg(sender).arg(newValue);
 
 	if (!message.isEmpty()) {
 		text += QString(" - %1").arg(message);
@@ -337,16 +337,32 @@ void CounterDock::onWebSocketTextMessageReceived(const QString &message)
 	if (!obj.contains("value"))
 		return;
 
-	// value is a UInt32
+	// JSON value is a UInt32
 	qint64 newValue = static_cast<qint64>(obj.value("value").toInteger());
 
-	QString sender = "WebSocket";
+	if (newValue == m_count)
+		return;
+
+	// Fallback
+	QString sender = QStringLiteral("WebSocket");
 	QString note;
 
 	if (obj.contains("metadata") && obj.value("metadata").isObject()) {
 		QJsonObject metadata = obj.value("metadata").toObject();
 		sender = metadata.value("sender").toString();
 		note = metadata.value("message").toString(); // message is optional
+
+		// Ignore messages older than 60s after last update
+		auto time = metadata.value("time").toString();
+		QDateTime messageTime = QDateTime::fromString(time, Qt::ISODate);
+		qint64 deltaTime = messageTime.secsTo(m_timestamp.toUTC());
+
+		// printf("Message time is: %s\n", qUtf8Printable(messageTime.toLocalTime().toString(Qt::ISODate)));
+		// printf("Timestamp time is: %s\n", qUtf8Printable(m_timestamp.toString(Qt::ISODate)));
+		// printf("Difference between times: %lld\n", static_cast<long long>(deltaTime));
+
+		if (deltaTime > 60)
+			return;
 	}
 
 	m_count = newValue;
@@ -379,7 +395,7 @@ void CounterDock::sendCounterUpdate()
 
 void CounterDock::updateWsStatusLabel(bool connected)
 {
-    if (!m_wsIndicatorLabel)
+	if (!m_wsIndicatorLabel)
 		return;
 
 	if (m_wsUrl.trimmed().isEmpty()) {

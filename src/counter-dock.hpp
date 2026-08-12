@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QListWidget>
 #include <QString>
+#include <QDateTime>
 #include <QAbstractSocket>
 
 class QWebSocket;
@@ -47,6 +48,7 @@ private:
 	void sendCounterUpdate();
 
 	qint64 m_count = 0;
+	QDateTime m_timestamp;
 	QString m_outputPath;
 	QString m_wsUrl;
 	QString m_token;
