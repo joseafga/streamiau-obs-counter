@@ -76,6 +76,8 @@ void CounterDock::buildUi()
 
 	m_logList = new QListWidget(this);
 	m_logList->setAlternatingRowColors(true);
+	m_logList->setMinimumHeight(36); // single line view
+	m_logList->setStyleSheet("QListWidget::item { padding: 0px; margin: 0px; }");
 	mainLayout->addWidget(m_logList, 1);
 
 	m_statusLabel = new QLabel(this);
