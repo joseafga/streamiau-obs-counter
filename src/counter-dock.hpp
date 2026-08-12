@@ -44,6 +44,7 @@ private:
 
 	void connectWebSocket();
 	void updateWsStatusLabel(bool connected);
+	void sendCounterUpdate();
 
 	qint64 m_count = 0;
 	QString m_outputPath;

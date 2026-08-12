@@ -117,6 +117,7 @@ void CounterDock::onIncrement()
 	updateDisplay();
 	writeToFile();
 	addLogEntry("OBS", "", m_count);
+	sendCounterUpdate();
 	saveSettings();
 }
 
@@ -126,6 +127,7 @@ void CounterDock::onDecrement()
 	updateDisplay();
 	writeToFile();
 	addLogEntry("OBS", "", m_count);
+	sendCounterUpdate();
 	saveSettings();
 }
 
@@ -138,6 +140,7 @@ void CounterDock::onReset()
 	updateDisplay();
 	writeToFile();
 	addLogEntry("OBS", "", m_count);
+	sendCounterUpdate();
 	saveSettings();
 }
 
@@ -353,6 +356,26 @@ void CounterDock::onWebSocketTextMessageReceived(const QString &message)
 
 	addLogEntry(sender, note, m_count);
 	saveSettings();
+}
+
+void CounterDock::sendCounterUpdate()
+{
+	if (!m_webSocket || m_webSocket->state() != QAbstractSocket::ConnectedState)
+		return;
+
+	if (m_token.isEmpty())
+	    return;
+
+	QJsonObject metadata;
+	metadata["sender"] = QStringLiteral("OBS");
+
+	QJsonObject obj;
+	obj["type"] = QStringLiteral("counter");
+	obj["token"] = m_token;
+	obj["value"] = m_count;
+	obj["metadata"] = metadata;
+
+	m_webSocket->sendTextMessage(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
 }
 
 void CounterDock::updateWsStatusLabel(bool connected)
