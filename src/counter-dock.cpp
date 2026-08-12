@@ -70,10 +70,10 @@ void CounterDock::buildUi()
 	mainLayout->addWidget(m_counterLabel);
 	mainLayout->addWidget(m_decBtn);
 
-	m_resetBtn = new QPushButton(tr("Zerar"), this);
+	m_resetBtn = new QPushButton(obs_module_text("Reset"), this);
 
 	m_settingsBtn = new QPushButton(QStringLiteral("\u2699"), this);
-	m_settingsBtn->setToolTip(tr("Configurações"));
+	m_settingsBtn->setToolTip(obs_module_text("Settings"));
 	m_settingsBtn->setFixedWidth(36);
 	m_settingsBtn->setProperty("themeID", "propertiesIconSmall");
 	m_settingsBtn->setProperty("class", "icon-gear");
@@ -98,7 +98,7 @@ void CounterDock::buildUi()
 
 	m_wsIndicatorLabel = new QLabel(this);
 	m_wsIndicatorLabel->setFixedSize(12, 12);
-	m_wsIndicatorLabel->setToolTip(tr("Status do WebSocket"));
+	m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketStatus"));
 	updateWsStatusLabel(false);
 
 	auto *statusBar = new QHBoxLayout();
@@ -163,7 +163,7 @@ void CounterDock::onOpenSettings()
 
 		saveSettings();
 		writeToFile();
-		m_statusLabel->setText(tr("Configurações salvas."));
+		m_statusLabel->setText(obs_module_text("SettingsSaved"));
 
 		if (wsUrlChanged)
 			connectWebSocket();
@@ -179,7 +179,7 @@ void CounterDock::writeToFile()
 {
 	if (m_outputPath.isEmpty()) {
 		if (m_statusLabel)
-			m_statusLabel->setText(tr("Nenhum arquivo configurado."));
+			m_statusLabel->setText(obs_module_text("SettingsNoFile"));
 		return;
 	}
 
@@ -189,7 +189,7 @@ void CounterDock::writeToFile()
 	QFile file(m_outputPath);
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
 		if (m_statusLabel)
-			m_statusLabel->setText(tr("Erro ao gravar o arquivo!"));
+			m_statusLabel->setText(obs_module_text("FileWriteError"));
 		return;
 	}
 
@@ -400,15 +400,15 @@ void CounterDock::updateWsStatusLabel(bool connected)
 
 	if (m_wsUrl.trimmed().isEmpty()) {
 		m_wsIndicatorLabel->setStyleSheet("background-color: #7F8C8D; border-radius: 6px;"); // sem endereço
-		m_wsIndicatorLabel->setToolTip(tr("WebSocket: nenhum endereço configurado."));
+		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketNoAddr"));
 		return;
 	}
 
 	if (connected) {
 		m_wsIndicatorLabel->setStyleSheet("background-color: #2ECC71; border-radius: 6px;"); // conectado
-		m_wsIndicatorLabel->setToolTip(tr("WebSocket: conectado."));
+		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketConnected"));
 	} else {
 		m_wsIndicatorLabel->setStyleSheet("background-color: #CC2D2D; border-radius: 6px;"); // desconectado
-		m_wsIndicatorLabel->setToolTip(tr("WebSocket: desconectado."));
+		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketDisconnected"));
 	}
 }

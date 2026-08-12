@@ -1,3 +1,4 @@
+#include <obs-module.h>
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -18,7 +19,7 @@ CounterSettingsDialog::CounterSettingsDialog(const QString &currentOutputPath, c
 
 void CounterSettingsDialog::buildUi()
 {
-	setWindowTitle(tr("Configurações do Contador"));
+	setWindowTitle(obs_module_text("SettingsTitle"));
 	setMinimumWidth(420);
 
 	auto *mainLayout = new QVBoxLayout(this);
@@ -30,26 +31,26 @@ void CounterSettingsDialog::buildUi()
 	m_pathEdit = new QLineEdit(this);
 	m_pathEdit->setReadOnly(true);
 	m_pathEdit->setText(m_outputPath);
-	m_pathEdit->setPlaceholderText(tr("Selecione o arquivo .txt para a fonte de Texto (GDI+)..."));
+	m_pathEdit->setPlaceholderText(obs_module_text("SettingsFileSelect"));
 
-	m_browseBtn = new QPushButton(tr("Procurar..."), this);
+	m_browseBtn = new QPushButton(obs_module_text("SettingsFileSearch"), this);
 
 	pathRow->addWidget(m_pathEdit, 1);
 	pathRow->addWidget(m_browseBtn);
-	form->addRow(tr("Arquivo de saída:"), pathRow);
+	form->addRow(obs_module_text("SettingsFileLabel"), pathRow);
 
 	m_wsUrlEdit = new QLineEdit(this);
 	m_wsUrlEdit->setText(m_wsUrl);
-	m_wsUrlEdit->setPlaceholderText("ws://host:port/path");
-	form->addRow("WebSocket:", m_wsUrlEdit);
+	m_wsUrlEdit->setPlaceholderText("wss://host:port/path");
+	form->addRow(obs_module_text("SettingsWebSocketLabel"), m_wsUrlEdit);
 
 	m_tokenEdit = new QLineEdit(this);
 	m_tokenEdit->setText(m_token);
-	form->addRow("Token:", m_tokenEdit);
+	form->addRow(obs_module_text("SettingsTokenLabel"), m_tokenEdit);
 
 	m_tokenDesc = new QLabel(this);
 	m_tokenDesc->setStyleSheet("color: gray; font-style: italic;");
-	m_tokenDesc->setText(tr("Não compartilhe este token. Ele dá acesso para alterar o contador."));
+	m_tokenDesc->setText(obs_module_text("SettingsTokenWarning"));
 	form->addRow(m_tokenDesc);
 
 	mainLayout->addLayout(form);
@@ -66,8 +67,8 @@ void CounterSettingsDialog::buildUi()
 void CounterSettingsDialog::onBrowse()
 {
 	QString start = m_pathEdit->text().isEmpty() ? QDir::homePath() : m_pathEdit->text();
-	QString path = QFileDialog::getSaveFileName(this, tr("Selecionar arquivo de texto"), start,
-						    tr("Arquivo de texto (*.txt)"));
+	QString path = QFileDialog::getSaveFileName(this, obs_module_text("SettingsFileBrowser"), start,
+						    obs_module_text("SettingsFileBrowserFilter"));
 
 	if (path.isEmpty())
 		return;
