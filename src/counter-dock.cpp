@@ -11,16 +11,15 @@
 #include <QJsonParseError>
 #include <QDateTime>
 #include <QFont>
-#include <QUrl>
-#include <QTimer>
-#include <QWebSocket>
+#include <QMetaObject>
+#include <ixwebsocket/IXWebSocket.h>
+#include <ixwebsocket/IXWebSocketMessageType.h>
 #include "counter-dock.hpp"
 #include "counter-settings-dialog.hpp"
 
 namespace {
 constexpr int kMaxLogEntries = 50;
-constexpr int kWsReconnectDelayMs = 5000;
-} // namespace
+}
 
 CounterDock::CounterDock(QWidget *parent) : QWidget(parent)
 {
@@ -35,10 +34,9 @@ CounterDock::CounterDock(QWidget *parent) : QWidget(parent)
 CounterDock::~CounterDock()
 {
 	if (m_webSocket) {
-		m_webSocket->disconnect(this);
-		m_webSocket->close();
-		m_webSocket->deleteLater();
-		m_webSocket = nullptr;
+		m_webSocket->setOnMessageCallback(nullptr);
+		m_webSocket->stop();
+		m_webSocket.reset();
 	}
 }
 
@@ -111,10 +109,6 @@ void CounterDock::buildUi()
 	connect(m_decBtn, &QPushButton::clicked, this, &CounterDock::onDecrement);
 	connect(m_resetBtn, &QPushButton::clicked, this, &CounterDock::onReset);
 	connect(m_settingsBtn, &QPushButton::clicked, this, &CounterDock::onOpenSettings);
-
-	m_wsReconnectTimer = new QTimer(this);
-	m_wsReconnectTimer->setSingleShot(true);
-	connect(m_wsReconnectTimer, &QTimer::timeout, this, &CounterDock::connectWebSocket);
 }
 
 void CounterDock::onIncrement()
@@ -273,13 +267,11 @@ void CounterDock::saveSettings()
 
 void CounterDock::connectWebSocket()
 {
-	m_wsReconnectTimer->stop();
-
+	// Tear down any previous connection first.
 	if (m_webSocket) {
-		m_webSocket->disconnect(this);
-		m_webSocket->close();
-		m_webSocket->deleteLater();
-		m_webSocket = nullptr;
+		m_webSocket->setOnMessageCallback(nullptr);
+		m_webSocket->stop();
+		m_webSocket.reset();
 	}
 
 	if (m_wsUrl.trimmed().isEmpty()) {
@@ -287,14 +279,35 @@ void CounterDock::connectWebSocket()
 		return;
 	}
 
-	m_webSocket = new QWebSocket(QString(), QWebSocketProtocol::VersionLatest, this);
+	m_webSocket = std::make_unique<ix::WebSocket>();
+	m_webSocket->setUrl(m_wsUrl.trimmed().toStdString());
 
-	connect(m_webSocket, &QWebSocket::connected, this, &CounterDock::onWebSocketConnected);
-	connect(m_webSocket, &QWebSocket::disconnected, this, &CounterDock::onWebSocketDisconnected);
-	connect(m_webSocket, &QWebSocket::textMessageReceived, this, &CounterDock::onWebSocketTextMessageReceived);
-	connect(m_webSocket, &QWebSocket::errorOccurred, this, &CounterDock::onWebSocketErrorOccurred);
+	m_webSocket->setOnMessageCallback([this](const ix::WebSocketMessagePtr &msg) {
+		switch (msg->type) {
+		case ix::WebSocketMessageType::Open:
+			QMetaObject::invokeMethod(this, [this]() { onWebSocketConnected(); }, Qt::QueuedConnection);
+			break;
+		case ix::WebSocketMessageType::Close:
+			QMetaObject::invokeMethod(this, [this]() { onWebSocketDisconnected(); }, Qt::QueuedConnection);
+			break;
+		case ix::WebSocketMessageType::Error: {
+			QString reason = QString::fromStdString(msg->errorInfo.reason);
+			QMetaObject::invokeMethod(
+				this, [this, reason]() { onWebSocketErrorOccurred(reason); }, Qt::QueuedConnection);
+			break;
+		}
+		case ix::WebSocketMessageType::Message: {
+			QString text = QString::fromStdString(msg->str);
+			QMetaObject::invokeMethod(
+				this, [this, text]() { onWebSocketTextMessageReceived(text); }, Qt::QueuedConnection);
+			break;
+		}
+		default:
+			break;
+		}
+	});
 
-	m_webSocket->open(QUrl(m_wsUrl.trimmed()));
+	m_webSocket->start();
 }
 
 void CounterDock::onWebSocketConnected()
@@ -305,20 +318,12 @@ void CounterDock::onWebSocketConnected()
 void CounterDock::onWebSocketDisconnected()
 {
 	updateWsStatusLabel(false);
-
-	// Keep reconnecting
-	if (!m_wsUrl.trimmed().isEmpty())
-		m_wsReconnectTimer->start(kWsReconnectDelayMs);
 }
 
-void CounterDock::onWebSocketErrorOccurred(QAbstractSocket::SocketError error)
+void CounterDock::onWebSocketErrorOccurred(const QString &reason)
 {
-	Q_UNUSED(error)
+	Q_UNUSED(reason)
 	updateWsStatusLabel(false);
-
-	// Keep reconnecting
-	if (!m_wsUrl.trimmed().isEmpty())
-		m_wsReconnectTimer->start(kWsReconnectDelayMs);
 }
 
 void CounterDock::onWebSocketTextMessageReceived(const QString &message)
@@ -375,7 +380,7 @@ void CounterDock::onWebSocketTextMessageReceived(const QString &message)
 
 void CounterDock::sendCounterUpdate()
 {
-	if (!m_webSocket || m_webSocket->state() != QAbstractSocket::ConnectedState)
+	if (!m_webSocket || m_webSocket->getReadyState() != ix::ReadyState::Open)
 		return;
 
 	if (m_token.isEmpty())
@@ -390,7 +395,8 @@ void CounterDock::sendCounterUpdate()
 	obj["value"] = m_count;
 	obj["metadata"] = metadata;
 
-	m_webSocket->sendTextMessage(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+	QByteArray json = QJsonDocument(obj).toJson(QJsonDocument::Compact);
+	m_webSocket->send(std::string(json.constData(), static_cast<size_t>(json.size())));
 }
 
 void CounterDock::updateWsStatusLabel(bool connected)
@@ -399,16 +405,16 @@ void CounterDock::updateWsStatusLabel(bool connected)
 		return;
 
 	if (m_wsUrl.trimmed().isEmpty()) {
-		m_wsIndicatorLabel->setStyleSheet("background-color: #7F8C8D; border-radius: 6px;"); // sem endereço
+		m_wsIndicatorLabel->setStyleSheet("background-color: #7F8C8D; border-radius: 6px;"); // no adress
 		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketNoAddr"));
 		return;
 	}
 
 	if (connected) {
-		m_wsIndicatorLabel->setStyleSheet("background-color: #2ECC71; border-radius: 6px;"); // conectado
+		m_wsIndicatorLabel->setStyleSheet("background-color: #2ECC71; border-radius: 6px;"); // conected
 		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketConnected"));
 	} else {
-		m_wsIndicatorLabel->setStyleSheet("background-color: #CC2D2D; border-radius: 6px;"); // desconectado
+		m_wsIndicatorLabel->setStyleSheet("background-color: #CC2D2D; border-radius: 6px;"); // disconnected
 		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketDisconnected"));
 	}
 }

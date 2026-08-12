@@ -19,6 +19,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <obs-module.h>
 #include <obs-frontend-api.h>
 #include <plugin-support.h>
+#include <ixwebsocket/IXNetSystem.h>
 #include "counter-dock.hpp"
 
 OBS_DECLARE_MODULE()
@@ -26,12 +27,15 @@ OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
 
 bool obs_module_load(void)
 {
-    CounterDock* streamiau_counter_dock = new CounterDock();
-	bool success = obs_frontend_add_dock_by_id("streamiau-counter-dock_id", obs_module_text("Title"), streamiau_counter_dock);
+	ix::initNetSystem();
+
+	CounterDock *streamiau_counter_dock = new CounterDock();
+	bool success = obs_frontend_add_dock_by_id("streamiau-counter-dock_id", obs_module_text("Title"),
+						   streamiau_counter_dock);
 
 	if (success) {
-    	obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
-    	return true;
+		obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
+		return true;
 	}
 
 	delete streamiau_counter_dock;
@@ -40,5 +44,6 @@ bool obs_module_load(void)
 
 void obs_module_unload(void)
 {
+	ix::uninitNetSystem();
 	obs_log(LOG_INFO, "plugin unloaded");
 }

@@ -6,10 +6,11 @@
 #include <QListWidget>
 #include <QString>
 #include <QDateTime>
-#include <QAbstractSocket>
+#include <memory>
 
-class QWebSocket;
-class QTimer;
+namespace ix {
+class WebSocket;
+}
 
 /*
  * CounterDock
@@ -29,11 +30,6 @@ private slots:
 	void onReset();
 	void onOpenSettings();
 
-	void onWebSocketConnected();
-	void onWebSocketDisconnected();
-	void onWebSocketErrorOccurred(QAbstractSocket::SocketError error);
-	void onWebSocketTextMessageReceived(const QString &message);
-
 private:
 	void buildUi();
 	void updateDisplay();
@@ -47,11 +43,17 @@ private:
 	void updateWsStatusLabel(bool connected);
 	void sendCounterUpdate();
 
+	void onWebSocketConnected();
+	void onWebSocketDisconnected();
+	void onWebSocketErrorOccurred(const QString &reason);
+	void onWebSocketTextMessageReceived(const QString &message);
+
 	qint64 m_count = 0;
 	QDateTime m_timestamp;
 	QString m_outputPath;
 	QString m_wsUrl;
 	QString m_token;
+	std::unique_ptr<ix::WebSocket> m_webSocket;
 
 	QLabel *m_counterLabel = nullptr;
 	QPushButton *m_incBtn = nullptr;
@@ -61,7 +63,4 @@ private:
 	QPushButton *m_settingsBtn = nullptr;
 	QLabel *m_statusLabel = nullptr;
 	QLabel *m_wsIndicatorLabel = nullptr;
-
-	QWebSocket *m_webSocket = nullptr;
-	QTimer *m_wsReconnectTimer = nullptr;
 };
