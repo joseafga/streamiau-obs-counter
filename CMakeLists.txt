@@ -25,14 +25,13 @@ FetchContent_Declare(
 set(USE_TLS ON CACHE BOOL "Enable TLS" FORCE)
 
 if(WIN32) # mbedTLS
-    set(USE_MBED_TLS ON CACHE BOOL "Use mbedTLS" FORCE)
-    set(USE_OPEN_SSL OFF CACHE BOOL "" FORCE)
-elseif(APPLE) # SecureTransport
-    set(USE_MBED_TLS OFF CACHE BOOL "" FORCE)
-    set(USE_OPEN_SSL OFF CACHE BOOL "" FORCE)
+  set(USE_MBED_TLS ON CACHE BOOL "Use mbedTLS" FORCE)
+  set(USE_OPEN_SSL OFF CACHE BOOL "" FORCE)
+
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE bcrypt)
 else() # OpenSSL
-    set(USE_MBED_TLS OFF CACHE BOOL "" FORCE)
-    set(USE_OPEN_SSL ON CACHE BOOL "Use OpenSSL" FORCE)
+  set(USE_MBED_TLS OFF CACHE BOOL "" FORCE)
+  set(USE_OPEN_SSL ON CACHE BOOL "Use OpenSSL" FORCE)
 endif()
 
 set(USE_WS OFF CACHE BOOL "" FORCE)
