@@ -17,11 +17,7 @@ find_package(libobs REQUIRED)
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::libobs)
 
 include(FetchContent)
-FetchContent_Declare(
-  ixwebsocket
-  GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git
-  GIT_TAG v11.4.5
-)
+FetchContent_Declare(ixwebsocket GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git GIT_TAG v11.4.5)
 set(USE_TLS ON CACHE BOOL "Enable TLS" FORCE)
 
 if(WIN32) # mbedTLS
@@ -60,7 +56,9 @@ if(ENABLE_QT)
   )
 endif()
 
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+target_sources(
+  ${CMAKE_PROJECT_NAME}
+  PRIVATE
     src/plugin-main.cpp
     src/counter-dock.cpp
     src/counter-dock.hpp
