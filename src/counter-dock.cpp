@@ -42,12 +42,19 @@ CounterDock::~CounterDock()
 
 void CounterDock::buildUi()
 {
+	// fix background to OBS theme
+	this->setAttribute(Qt::WA_StyledBackground, true);
+
 	auto *mainLayout = new QVBoxLayout(this);
-	mainLayout->setContentsMargins(0, 0, 0, 0);
-	mainLayout->setSpacing(8);
+	mainLayout->setContentsMargins(2, 2, 2, 2);
+	mainLayout->setSpacing(4);
 
 	m_counterLabel = new QLabel(QStringLiteral("0"), this);
-	m_counterLabel->setStyleSheet("font-family: sans-serif; font-size: 48px; font-weight: bold;");
+	m_counterLabel->setStyleSheet("font-family: sans-serif; \
+		font-size: 48px; \
+		font-weight: bold; \
+		background-color: rgba(0, 0, 0, 0.25); \
+		border-radius: 8px;");
 	m_counterLabel->setAlignment(Qt::AlignCenter);
 	m_counterLabel->setFrameShape(QFrame::StyledPanel);
 	m_counterLabel->setMinimumHeight(56);
@@ -87,7 +94,8 @@ void CounterDock::buildUi()
 	m_logList = new QListWidget(this);
 	m_logList->setAlternatingRowColors(true);
 	m_logList->setMinimumHeight(36); // single line view
-	m_logList->setStyleSheet("QListWidget::item { padding: 0px; margin: 0px; }");
+	m_logList->setStyleSheet("background-color: rgba(0, 0, 0, 0.25); border-radius: 8px; \
+		QListWidget::item { padding: 0px; margin: 0px; }");
 	mainLayout->addWidget(m_logList, 1);
 
 	// Status bar
