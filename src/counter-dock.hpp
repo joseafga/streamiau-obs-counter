@@ -30,6 +30,10 @@ private slots:
 	void onReset();
 	void onOpenSettings();
 
+protected:
+	void showEvent(QShowEvent *event) override;
+	void hideEvent(QHideEvent *event) override;
+
 private:
 	void buildUi();
 	void updateDisplay();
@@ -39,7 +43,7 @@ private:
 	void saveSettings();
 	QString configFilePath() const;
 
-	void connectWebSocket();
+	void setupWebSocket();
 	void updateWsStatusLabel(bool connected);
 	void sendCounterUpdate();
 

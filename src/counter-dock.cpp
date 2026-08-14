@@ -28,7 +28,7 @@ CounterDock::CounterDock(QWidget *parent) : QWidget(parent)
 	updateDisplay();
 
 	writeToFile();
-	connectWebSocket();
+	setupWebSocket();
 }
 
 CounterDock::~CounterDock()
@@ -119,6 +119,18 @@ void CounterDock::buildUi()
 	connect(m_settingsBtn, &QPushButton::clicked, this, &CounterDock::onOpenSettings);
 }
 
+void CounterDock::showEvent(QShowEvent *event)
+{
+	QWidget::showEvent(event);
+	m_webSocket->start();
+}
+
+void CounterDock::hideEvent(QHideEvent *event)
+{
+	QWidget::hideEvent(event);
+	m_webSocket->stop();
+}
+
 void CounterDock::onIncrement()
 {
 	m_count += 1;
@@ -167,8 +179,10 @@ void CounterDock::onOpenSettings()
 		writeToFile();
 		m_statusLabel->setText(obs_module_text("SettingsSaved"));
 
-		if (wsUrlChanged)
-			connectWebSocket();
+		if (wsUrlChanged) {
+			setupWebSocket();
+			m_webSocket->start();
+		}
 	}
 }
 
@@ -273,7 +287,7 @@ void CounterDock::saveSettings()
 	file.close();
 }
 
-void CounterDock::connectWebSocket()
+void CounterDock::setupWebSocket()
 {
 	// Tear down any previous connection first.
 	if (m_webSocket) {
@@ -314,8 +328,6 @@ void CounterDock::connectWebSocket()
 			break;
 		}
 	});
-
-	m_webSocket->start();
 }
 
 void CounterDock::onWebSocketConnected()
