@@ -6,6 +6,7 @@
 #include <QListWidget>
 #include <QString>
 #include <QDateTime>
+#include <QTimer>
 #include <memory>
 
 namespace ix {
@@ -67,4 +68,5 @@ private:
 	QPushButton *m_settingsBtn = nullptr;
 	QLabel *m_statusLabel = nullptr;
 	QLabel *m_wsIndicatorLabel = nullptr;
+	QTimer *m_sendTimer = nullptr;
 };

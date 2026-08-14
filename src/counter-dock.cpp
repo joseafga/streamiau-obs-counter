@@ -12,6 +12,7 @@
 #include <QDateTime>
 #include <QFont>
 #include <QMetaObject>
+#include <QTimer>
 #include <ixwebsocket/IXWebSocket.h>
 #include <ixwebsocket/IXWebSocketMessageType.h>
 #include "counter-dock.hpp"
@@ -19,7 +20,8 @@
 
 namespace {
 constexpr int kMaxLogEntries = 50;
-}
+constexpr int kDebounceDelay = 500;
+} // namespace
 
 CounterDock::CounterDock(QWidget *parent) : QWidget(parent)
 {
@@ -117,6 +119,11 @@ void CounterDock::buildUi()
 	connect(m_decBtn, &QPushButton::clicked, this, &CounterDock::onDecrement);
 	connect(m_resetBtn, &QPushButton::clicked, this, &CounterDock::onReset);
 	connect(m_settingsBtn, &QPushButton::clicked, this, &CounterDock::onOpenSettings);
+
+	// Prevents multiple requests, send new counter value after `kDebounceDelay` only
+	m_sendTimer = new QTimer(this);
+	m_sendTimer->setSingleShot(true);
+	connect(m_sendTimer, &QTimer::timeout, this, &CounterDock::sendCounterUpdate);
 }
 
 void CounterDock::showEvent(QShowEvent *event)
@@ -137,7 +144,7 @@ void CounterDock::onIncrement()
 	updateDisplay();
 	writeToFile();
 	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
-	sendCounterUpdate();
+	m_sendTimer->start(kDebounceDelay);
 	saveSettings();
 }
 
@@ -147,7 +154,7 @@ void CounterDock::onDecrement()
 	updateDisplay();
 	writeToFile();
 	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
-	sendCounterUpdate();
+	m_sendTimer->start(kDebounceDelay);
 	saveSettings();
 }
 
@@ -160,7 +167,8 @@ void CounterDock::onReset()
 	updateDisplay();
 	writeToFile();
 	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
-	sendCounterUpdate();
+	QMetaObject::invokeMethod(m_sendTimer, "start", Qt::QueuedConnection);
+	m_sendTimer->start(kDebounceDelay);
 	saveSettings();
 }
 
