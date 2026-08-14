@@ -30,7 +30,7 @@ bool obs_module_load(void)
 	ix::initNetSystem();
 
 	CounterDock *streamiau_counter_dock = new CounterDock();
-	bool success = obs_frontend_add_dock_by_id("streamiau-counter-dock_id",
+	bool success = obs_frontend_add_dock_by_id("streamiau_counter_dock_id",
 						   obs_module_text("StreamiauCounter.Title"), streamiau_counter_dock);
 
 	if (success) {
