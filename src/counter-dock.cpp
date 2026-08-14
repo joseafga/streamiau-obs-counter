@@ -77,10 +77,10 @@ void CounterDock::buildUi()
 	mainLayout->addWidget(m_counterLabel);
 	mainLayout->addWidget(m_decBtn);
 
-	m_resetBtn = new QPushButton(obs_module_text("Reset"), this);
+	m_resetBtn = new QPushButton(obs_module_text("StreamiauCounter.Reset"), this);
 
 	m_settingsBtn = new QPushButton(QStringLiteral("\u2699"), this);
-	m_settingsBtn->setToolTip(obs_module_text("Settings"));
+	m_settingsBtn->setToolTip(obs_module_text("StreamiauCounter.Settings"));
 	m_settingsBtn->setFixedWidth(36);
 	m_settingsBtn->setProperty("themeID", "propertiesIconSmall");
 	m_settingsBtn->setProperty("class", "icon-gear");
@@ -106,7 +106,7 @@ void CounterDock::buildUi()
 
 	m_wsIndicatorLabel = new QLabel(this);
 	m_wsIndicatorLabel->setFixedSize(12, 12);
-	m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketStatus"));
+	m_wsIndicatorLabel->setToolTip(obs_module_text("StreamiauCounter.WebSocketStatus"));
 	updateWsStatusLabel(false);
 
 	auto *statusBar = new QHBoxLayout();
@@ -185,7 +185,7 @@ void CounterDock::onOpenSettings()
 
 		saveSettings();
 		writeToFile();
-		m_statusLabel->setText(obs_module_text("SettingsSaved"));
+		m_statusLabel->setText(obs_module_text("StreamiauCounter.SettingsSaved"));
 
 		if (wsUrlChanged) {
 			setupWebSocket();
@@ -203,7 +203,7 @@ void CounterDock::writeToFile()
 {
 	if (m_outputPath.isEmpty()) {
 		if (m_statusLabel)
-			m_statusLabel->setText(obs_module_text("SettingsNoFile"));
+			m_statusLabel->setText(obs_module_text("StreamiauCounter.SettingsNoFile"));
 		return;
 	}
 
@@ -213,7 +213,7 @@ void CounterDock::writeToFile()
 	QFile file(m_outputPath);
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
 		if (m_statusLabel)
-			m_statusLabel->setText(obs_module_text("FileWriteError"));
+			m_statusLabel->setText(obs_module_text("StreamiauCounter.FileWriteError"));
 		return;
 	}
 
@@ -434,15 +434,15 @@ void CounterDock::updateWsStatusLabel(bool connected)
 
 	if (m_wsUrl.trimmed().isEmpty()) {
 		m_wsIndicatorLabel->setStyleSheet("background-color: #7F8C8D; border-radius: 6px;"); // no adress
-		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketNoAddr"));
+		m_wsIndicatorLabel->setToolTip(obs_module_text("StreamiauCounter.WebSocketNoAddr"));
 		return;
 	}
 
 	if (connected) {
 		m_wsIndicatorLabel->setStyleSheet("background-color: #2ECC71; border-radius: 6px;"); // conected
-		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketConnected"));
+		m_wsIndicatorLabel->setToolTip(obs_module_text("StreamiauCounter.WebSocketConnected"));
 	} else {
 		m_wsIndicatorLabel->setStyleSheet("background-color: #CC2D2D; border-radius: 6px;"); // disconnected
-		m_wsIndicatorLabel->setToolTip(obs_module_text("WebSocketDisconnected"));
+		m_wsIndicatorLabel->setToolTip(obs_module_text("StreamiauCounter.WebSocketDisconnected"));
 	}
 }

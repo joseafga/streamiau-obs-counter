@@ -19,7 +19,7 @@ CounterSettingsDialog::CounterSettingsDialog(const QString &currentOutputPath, c
 
 void CounterSettingsDialog::buildUi()
 {
-	setWindowTitle(obs_module_text("SettingsTitle"));
+	setWindowTitle(obs_module_text("StreamiauCounter.SettingsTitle"));
 	setMinimumWidth(420);
 
 	auto *mainLayout = new QVBoxLayout(this);
@@ -31,26 +31,26 @@ void CounterSettingsDialog::buildUi()
 	m_pathEdit = new QLineEdit(this);
 	m_pathEdit->setReadOnly(true);
 	m_pathEdit->setText(m_outputPath);
-	m_pathEdit->setPlaceholderText(obs_module_text("SettingsFileSelect"));
+	m_pathEdit->setPlaceholderText(obs_module_text("StreamiauCounter.SettingsFileSelect"));
 
-	m_browseBtn = new QPushButton(obs_module_text("SettingsFileSearch"), this);
+	m_browseBtn = new QPushButton(obs_module_text("StreamiauCounter.SettingsFileSearch"), this);
 
 	pathRow->addWidget(m_pathEdit, 1);
 	pathRow->addWidget(m_browseBtn);
-	form->addRow(obs_module_text("SettingsFileLabel"), pathRow);
+	form->addRow(obs_module_text("StreamiauCounter.SettingsFileLabel"), pathRow);
 
 	m_wsUrlEdit = new QLineEdit(this);
 	m_wsUrlEdit->setText(m_wsUrl);
 	m_wsUrlEdit->setPlaceholderText("wss://host:port/path");
-	form->addRow(obs_module_text("SettingsWebSocketLabel"), m_wsUrlEdit);
+	form->addRow(obs_module_text("StreamiauCounter.SettingsWebSocketLabel"), m_wsUrlEdit);
 
 	m_tokenEdit = new QLineEdit(this);
 	m_tokenEdit->setText(m_token);
-	form->addRow(obs_module_text("SettingsTokenLabel"), m_tokenEdit);
+	form->addRow(obs_module_text("StreamiauCounter.SettingsTokenLabel"), m_tokenEdit);
 
 	m_tokenDesc = new QLabel(this);
 	m_tokenDesc->setStyleSheet("color: gray; font-style: italic;");
-	m_tokenDesc->setText(obs_module_text("SettingsTokenWarning"));
+	m_tokenDesc->setText(obs_module_text("StreamiauCounter.SettingsTokenWarning"));
 	form->addRow(m_tokenDesc);
 
 	mainLayout->addLayout(form);
@@ -67,8 +67,9 @@ void CounterSettingsDialog::buildUi()
 void CounterSettingsDialog::onBrowse()
 {
 	QString start = m_pathEdit->text().isEmpty() ? QDir::homePath() : m_pathEdit->text();
-	QString path = QFileDialog::getSaveFileName(this, obs_module_text("SettingsFileBrowser"), start,
-						    obs_module_text("SettingsFileBrowserFilter"));
+	QString path = QFileDialog::getSaveFileName(this, obs_module_text("StreamiauCounter.SettingsFileBrowser"),
+						    start,
+						    obs_module_text("StreamiauCounter.SettingsFileBrowserFilter"));
 
 	if (path.isEmpty())
 		return;
