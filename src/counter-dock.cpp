@@ -1,4 +1,5 @@
 #include <obs-module.h>
+#include <obs-frontend-api.h>
 #include <util/bmem.h>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -26,6 +27,9 @@ constexpr int kDebounceDelay = 500;
 CounterDock::CounterDock(QWidget *parent) : QWidget(parent)
 {
 	buildUi();
+	registerHotkeys();
+	obs_frontend_add_save_callback(frontendSaveCallback, this);
+
 	loadSettings();
 	updateDisplay();
 
@@ -35,6 +39,9 @@ CounterDock::CounterDock(QWidget *parent) : QWidget(parent)
 
 CounterDock::~CounterDock()
 {
+	obs_frontend_remove_save_callback(frontendSaveCallback, this);
+	unregisterHotkeys();
+
 	if (m_webSocket) {
 		m_webSocket->setOnMessageCallback(nullptr);
 		m_webSocket->stop();
@@ -444,5 +451,105 @@ void CounterDock::updateWsStatusLabel(bool connected)
 	} else {
 		m_wsIndicatorLabel->setStyleSheet("background-color: #CC2D2D; border-radius: 6px;"); // disconnected
 		m_wsIndicatorLabel->setToolTip(obs_module_text("StreamiauCounter.WebSocketDisconnected"));
+	}
+}
+
+void CounterDock::registerHotkeys()
+{
+	m_hotkeyIncrement = obs_hotkey_register_frontend("streamiau_counter_hotkey_increment",
+							 obs_module_text("StreamiauCounter.Hotkey.Increment"),
+							 hotkeyIncrementCallback, this);
+
+	m_hotkeyDecrement = obs_hotkey_register_frontend("streamiau_counter_hotkey_decrement",
+							 obs_module_text("StreamiauCounter.Hotkey.Decrement"),
+							 hotkeyDecrementCallback, this);
+
+	m_hotkeyReset = obs_hotkey_register_frontend("streamiau_counter_hotkey_reset",
+						     obs_module_text("StreamiauCounter.Hotkey.Reset"),
+						     hotkeyResetCallback, this);
+}
+
+void CounterDock::unregisterHotkeys()
+{
+	obs_hotkey_unregister(m_hotkeyIncrement);
+	obs_hotkey_unregister(m_hotkeyDecrement);
+	obs_hotkey_unregister(m_hotkeyReset);
+
+	m_hotkeyIncrement = OBS_INVALID_HOTKEY_ID;
+	m_hotkeyDecrement = OBS_INVALID_HOTKEY_ID;
+	m_hotkeyReset = OBS_INVALID_HOTKEY_ID;
+}
+
+void CounterDock::hotkeyIncrementCallback(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed)
+{
+	UNUSED_PARAMETER(id);
+	UNUSED_PARAMETER(hotkey);
+
+	if (!pressed)
+		return;
+
+	auto *dock = static_cast<CounterDock *>(data);
+	QMetaObject::invokeMethod(dock, "onIncrement", Qt::QueuedConnection);
+}
+
+void CounterDock::hotkeyDecrementCallback(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed)
+{
+	UNUSED_PARAMETER(id);
+	UNUSED_PARAMETER(hotkey);
+
+	if (!pressed)
+		return;
+
+	auto *dock = static_cast<CounterDock *>(data);
+	QMetaObject::invokeMethod(dock, "onDecrement", Qt::QueuedConnection);
+}
+
+void CounterDock::hotkeyResetCallback(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed)
+{
+	UNUSED_PARAMETER(id);
+	UNUSED_PARAMETER(hotkey);
+
+	if (!pressed)
+		return;
+
+	auto *dock = static_cast<CounterDock *>(data);
+	QMetaObject::invokeMethod(dock, "onReset", Qt::QueuedConnection);
+}
+
+void CounterDock::frontendSaveCallback(obs_data_t *saveData, bool saving, void *data)
+{
+	static_cast<CounterDock *>(data)->onFrontendSave(saveData, saving);
+}
+
+void CounterDock::onFrontendSave(obs_data_t *saveData, bool saving)
+{
+	static const char *kIncrementKey = "streamiau_counter_hotkey_increment";
+	static const char *kDecrementKey = "streamiau_counter_hotkey_decrement";
+	static const char *kResetKey = "streamiau_counter_hotkey_reset";
+
+	if (saving) {
+		obs_data_array_t *incArray = obs_hotkey_save(m_hotkeyIncrement);
+		obs_data_array_t *decArray = obs_hotkey_save(m_hotkeyDecrement);
+		obs_data_array_t *resetArray = obs_hotkey_save(m_hotkeyReset);
+
+		obs_data_set_array(saveData, kIncrementKey, incArray);
+		obs_data_set_array(saveData, kDecrementKey, decArray);
+		obs_data_set_array(saveData, kResetKey, resetArray);
+
+		obs_data_array_release(incArray);
+		obs_data_array_release(decArray);
+		obs_data_array_release(resetArray);
+	} else {
+		obs_data_array_t *incArray = obs_data_get_array(saveData, kIncrementKey);
+		obs_data_array_t *decArray = obs_data_get_array(saveData, kDecrementKey);
+		obs_data_array_t *resetArray = obs_data_get_array(saveData, kResetKey);
+
+		obs_hotkey_load(m_hotkeyIncrement, incArray);
+		obs_hotkey_load(m_hotkeyDecrement, decArray);
+		obs_hotkey_load(m_hotkeyReset, resetArray);
+
+		obs_data_array_release(incArray);
+		obs_data_array_release(decArray);
+		obs_data_array_release(resetArray);
 	}
 }

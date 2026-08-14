@@ -1,5 +1,7 @@
 #pragma once
 
+#include <obs.h>
+#include <memory>
 #include <QWidget>
 #include <QLabel>
 #include <QPushButton>
@@ -7,7 +9,6 @@
 #include <QString>
 #include <QDateTime>
 #include <QTimer>
-#include <memory>
 
 namespace ix {
 class WebSocket;
@@ -53,12 +54,25 @@ private:
 	void onWebSocketErrorOccurred(const QString &reason);
 	void onWebSocketTextMessageReceived(const QString &message);
 
+	void registerHotkeys();
+	void unregisterHotkeys();
+	void onFrontendSave(obs_data_t *saveData, bool saving);
+
+	static void hotkeyIncrementCallback(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed);
+	static void hotkeyDecrementCallback(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed);
+	static void hotkeyResetCallback(void *data, obs_hotkey_id id, obs_hotkey_t *hotkey, bool pressed);
+	static void frontendSaveCallback(obs_data_t *saveData, bool saving, void *data);
+
 	qint64 m_count = 0;
 	QDateTime m_timestamp;
 	QString m_outputPath;
 	QString m_wsUrl;
 	QString m_token;
 	std::unique_ptr<ix::WebSocket> m_webSocket;
+
+	obs_hotkey_id m_hotkeyIncrement = OBS_INVALID_HOTKEY_ID;
+	obs_hotkey_id m_hotkeyDecrement = OBS_INVALID_HOTKEY_ID;
+	obs_hotkey_id m_hotkeyReset = OBS_INVALID_HOTKEY_ID;
 
 	QLabel *m_counterLabel = nullptr;
 	QPushButton *m_incBtn = nullptr;
