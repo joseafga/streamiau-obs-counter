@@ -328,13 +328,13 @@ void CounterDock::setupWebSocket()
 		m_webSocket.reset();
 	}
 
-	if (m_wsUrl.trimmed().isEmpty()) {
+	if (m_wsUrl.isEmpty()) {
 		updateWsStatusLabel(false);
 		return;
 	}
 
 	m_webSocket = std::make_unique<ix::WebSocket>();
-	m_webSocket->setUrl(m_wsUrl.trimmed().toStdString());
+	m_webSocket->setUrl(m_wsUrl.toStdString());
 
 	m_webSocket->setOnMessageCallback([this](const ix::WebSocketMessagePtr &msg) {
 		switch (msg->type) {
@@ -459,7 +459,7 @@ void CounterDock::updateWsStatusLabel(bool connected)
 	if (!m_wsIndicatorLabel)
 		return;
 
-	if (m_wsUrl.trimmed().isEmpty()) {
+	if (m_wsUrl.isEmpty()) {
 		m_wsIndicatorLabel->setStyleSheet("background-color: #7F8C8D; border-radius: 6px;"); // no adress
 		m_wsIndicatorLabel->setToolTip(obs_module_text("StreamiauCounter.WebSocketNoAddr"));
 		return;
