@@ -140,13 +140,15 @@ void CounterDock::buildUi()
 void CounterDock::showEvent(QShowEvent *event)
 {
 	QWidget::showEvent(event);
-	m_webSocket->start();
+	if (m_webSocket)
+		m_webSocket->start();
 }
 
 void CounterDock::hideEvent(QHideEvent *event)
 {
 	QWidget::hideEvent(event);
-	m_webSocket->stop();
+	if (m_webSocket)
+		m_webSocket->stop();
 }
 
 void CounterDock::onIncrement()
@@ -321,12 +323,9 @@ void CounterDock::setupSender()
 
 void CounterDock::setupWebSocket()
 {
-	// Tear down any previous connection first.
-	if (m_webSocket) {
-		m_webSocket->setOnMessageCallback(nullptr);
+	// Stop any active connection
+	if (m_webSocket)
 		m_webSocket->stop();
-		m_webSocket.reset();
-	}
 
 	if (m_wsUrl.isEmpty()) {
 		updateWsStatusLabel(false);
@@ -374,7 +373,8 @@ void CounterDock::onWebSocketDisconnected()
 
 void CounterDock::onWebSocketErrorOccurred(const QString &reason)
 {
-	Q_UNUSED(reason)
+	UNUSED_PARAMETER(reason);
+
 	updateWsStatusLabel(false);
 }
 
