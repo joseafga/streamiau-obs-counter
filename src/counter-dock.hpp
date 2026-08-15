@@ -45,6 +45,7 @@ private:
 	void saveSettings();
 	QString configFilePath() const;
 
+	void setupSender();
 	void setupWebSocket();
 	void updateWsStatusLabel(bool connected);
 	void sendCounterUpdate();
@@ -68,6 +69,7 @@ private:
 	QString m_outputPath;
 	QString m_wsUrl;
 	QString m_token;
+	QString m_sender;
 	std::unique_ptr<ix::WebSocket> m_webSocket;
 
 	obs_hotkey_id m_hotkeyIncrement = OBS_INVALID_HOTKEY_ID;

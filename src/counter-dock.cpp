@@ -26,6 +26,8 @@ constexpr int kDebounceDelay = 500;
 
 CounterDock::CounterDock(QWidget *parent) : QWidget(parent)
 {
+	setupSender();
+
 	buildUi();
 	registerHotkeys();
 	obs_frontend_add_save_callback(frontendSaveCallback, this);
@@ -150,7 +152,7 @@ void CounterDock::onIncrement()
 	m_count += 1;
 	updateDisplay();
 	writeToFile();
-	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
+	addLogEntry(m_sender, QString(), m_count);
 	m_sendTimer->start(kDebounceDelay);
 	saveSettings();
 }
@@ -160,7 +162,7 @@ void CounterDock::onDecrement()
 	m_count -= 1;
 	updateDisplay();
 	writeToFile();
-	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
+	addLogEntry(m_sender, QString(), m_count);
 	m_sendTimer->start(kDebounceDelay);
 	saveSettings();
 }
@@ -173,7 +175,7 @@ void CounterDock::onReset()
 	m_count = 0;
 	updateDisplay();
 	writeToFile();
-	addLogEntry(QStringLiteral("OBS"), QStringLiteral(""), m_count);
+	addLogEntry(m_sender, QString(), m_count);
 	QMetaObject::invokeMethod(m_sendTimer, "start", Qt::QueuedConnection);
 	m_sendTimer->start(kDebounceDelay);
 	saveSettings();
@@ -302,6 +304,19 @@ void CounterDock::saveSettings()
 	file.close();
 }
 
+void CounterDock::setupSender()
+{
+	QString username;
+
+#ifdef Q_OS_WIN
+	username = qEnvironmentVariable("USERNAME");
+#else // Linux e macOS
+	username = qEnvironmentVariable("USER");
+#endif
+
+	m_sender = QString("OBS#%1").arg(username.left(10));
+}
+
 void CounterDock::setupWebSocket()
 {
 	// Tear down any previous connection first.
@@ -383,14 +398,17 @@ void CounterDock::onWebSocketTextMessageReceived(const QString &message)
 	if (newValue == m_count)
 		return;
 
-	// Fallback
-	QString sender = QStringLiteral("WebSocket");
+	QString sender = QStringLiteral("WebSocket"); // fallback
 	QString note;
 
 	if (obj.contains("metadata") && obj.value("metadata").isObject()) {
 		QJsonObject metadata = obj.value("metadata").toObject();
 		sender = metadata.value("sender").toString();
 		note = metadata.value("message").toString(); // message is optional
+
+		// Ignore echos messages
+		if (sender == m_sender)
+			return;
 
 		// Ignore messages older than 60s after last update
 		auto time = metadata.value("time").toString();
@@ -422,7 +440,7 @@ void CounterDock::sendCounterUpdate()
 		return;
 
 	QJsonObject metadata;
-	metadata["sender"] = QStringLiteral("OBS");
+	metadata["sender"] = m_sender;
 
 	QJsonObject obj;
 	obj["type"] = QStringLiteral("counter");
