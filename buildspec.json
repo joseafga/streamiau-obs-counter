@@ -38,7 +38,7 @@
     },
     "name": "streamiau-counter",
     "displayName": "Streamiau counter for OBS",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "author": "José Almeida",
     "website": "https://github.com/joseafga/streamiau-obs-counter",
     "email": "streamiau@joseafga.com.br"

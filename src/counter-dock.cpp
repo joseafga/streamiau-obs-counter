@@ -310,12 +310,10 @@ void CounterDock::saveSettings()
 
 void CounterDock::setupSender()
 {
-	QString username;
-
 #ifdef Q_OS_WIN
-	username = qEnvironmentVariable("USERNAME");
+	QString username = qEnvironmentVariable("USERNAME");
 #else // Linux e macOS
-	username = qEnvironmentVariable("USER");
+	QString username = qEnvironmentVariable("USER");
 #endif
 
 	m_sender = QString("OBS#%1").arg(username.left(10));
