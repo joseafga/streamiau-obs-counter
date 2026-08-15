@@ -105,6 +105,8 @@ void CounterDock::buildUi()
 	m_logList = new QListWidget(this);
 	m_logList->setAlternatingRowColors(true);
 	m_logList->setMinimumHeight(36); // single line view
+	m_logList->setSelectionMode(QAbstractItemView::NoSelection);
+	m_logList->setFocusPolicy(Qt::FocusPolicy::NoFocus);
 	m_logList->setStyleSheet("background-color: rgba(0, 0, 0, 0.25); border-radius: 8px; \
 		QListWidget::item { padding: 0px; margin: 0px; }");
 	mainLayout->addWidget(m_logList, 1);
